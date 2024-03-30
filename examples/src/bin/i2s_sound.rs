@@ -75,7 +75,7 @@ fn main() -> ! {
 
     let i2s = I2s::new(
         peripherals.I2S0,
-        Standard::Philips,
+        Standard::DAC,
         DataFormat::Data16Channel16,
         44100.Hz(),
         dma_channel.configure(

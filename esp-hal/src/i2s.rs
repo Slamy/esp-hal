@@ -141,6 +141,7 @@ pub enum Standard {
     Philips,
     // Tdm,
     // Pdm,
+    DAC,
 }
 
 /// Supported data formats
@@ -1194,7 +1195,7 @@ mod private {
             });
         }
 
-        fn configure(_standard: &Standard, data_format: &DataFormat) {
+        fn configure(standard: &Standard, data_format: &DataFormat) {
             let i2s = Self::register_block();
 
             let fifo_mod = match data_format {
@@ -1227,9 +1228,9 @@ mod private {
                     .rx_slave_mod()
                     .clear_bit()
                     .tx_msb_shift()
-                    .clear_bit() // according to dac_dma_periph_init
+                    .variant(*standard != Standard::DAC) // according to dac_dma_periph_init
                     .rx_msb_shift()
-                    .clear_bit() // according to dac_dma_periph_init
+                    .variant(*standard != Standard::DAC) // according to dac_dma_periph_init
                     .tx_short_sync()
                     .variant(false) //??
                     .rx_short_sync()
@@ -1239,9 +1240,9 @@ mod private {
                     .rx_msb_right()
                     .clear_bit()
                     .tx_right_first()
-                    .set_bit() // according to dac_dma_periph_init
+                    .variant(*standard == Standard::DAC) // according to dac_dma_periph_init
                     .rx_right_first()
-                    .set_bit() // according to dac_dma_periph_init
+                    .variant(*standard == Standard::DAC) // according to dac_dma_periph_init
                     .tx_mono()
                     .clear_bit()
                     .rx_mono()
@@ -1275,7 +1276,7 @@ mod private {
             // Like esp-idf in i2s_ll_enable_builtin_adc_dac()
             // LCD_EN must be true, camera_en must be false
             i2s.conf2()
-                .modify(|_, w| w.camera_en().clear_bit().lcd_en().set_bit());
+                .modify(|_, w| w.camera_en().clear_bit().lcd_en().variant(*standard == Standard::DAC));
         }
 
         fn set_master() {
