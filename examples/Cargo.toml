@@ -42,6 +42,7 @@ static_cell         = { version = "2.0.0", features = ["nightly"] }
 usb-device          = "0.3.2"
 usbd-serial         = "0.2.1"
 log                 = "0.4"
+libm = "0.2.8"
 
 [features]
 esp32   = ["esp-hal/esp32",   "esp-backtrace/esp32",   "esp-println/esp32",   "esp-hal-smartled/esp32"]

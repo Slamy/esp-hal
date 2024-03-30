@@ -62,10 +62,11 @@ impl<'d> DAC1<'d> {
     pub fn new(dac: impl Peripheral<P = peripherals::DAC1> + 'd, _pin: Dac1Gpio) -> Self {
         crate::into_ref!(dac);
 
-        #[cfg(esp32s2)]
+        // Experimental according to https://github.com/espressif/esp-idf/blob/master/components/hal/esp32/include/hal/dac_ll.h
+        // dac_dig_force must be true when fed from I2S. Same goes for dac_clk_inv ?
         unsafe { &*peripherals::SENS::PTR }
             .sar_dac_ctrl1()
-            .modify(|_, w| w.dac_clkgate_en().set_bit());
+            .modify(|_, w| w.dac_dig_force().set_bit().dac_clk_inv().set_bit());
 
         unsafe { &*peripherals::RTC_IO::PTR }
             .pad_dac1()
@@ -99,10 +100,11 @@ impl<'d> DAC2<'d> {
     pub fn new(dac: impl Peripheral<P = peripherals::DAC2> + 'd, _pin: Dac2Gpio) -> Self {
         crate::into_ref!(dac);
 
-        #[cfg(esp32s2)]
+        // Experimental according to https://github.com/espressif/esp-idf/blob/master/components/hal/esp32/include/hal/dac_ll.h
+        // dac_dig_force must be true when fed from I2S. Same goes for dac_clk_inv ?
         unsafe { &*peripherals::SENS::PTR }
             .sar_dac_ctrl1()
-            .modify(|_, w| w.dac_clkgate_en().set_bit());
+            .modify(|_, w| w.dac_dig_force().set_bit().dac_clk_inv().set_bit());
 
         unsafe { &*peripherals::RTC_IO::PTR }
             .pad_dac2()

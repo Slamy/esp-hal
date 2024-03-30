@@ -1207,15 +1207,29 @@ mod private {
             i2s.sample_rate_conf()
                 .modify(|_, w| w.rx_bits_mod().variant(data_format.channel_bits()));
 
+            // Note: According to chapter 12.5.3 of the technical reference manual:
+            // The I2S0 module should be configured to master transmitting mode when it
+            // connects to the on-chip DAC ... will input right-channel data to
+            // DAC1 module and left-channel data to DAC2 module When using the
+            // I2S DMA module, 8 bits of data-to-be-transmitted are shifted to the left by 8
+            // bits of data-to-be-received into the DMA double-byte type of
+            // buffer
+
+            // The I2S_LCD_EN bit of register I2S_CONF2_REG should be set to 1, while
+            // I2S_RX_SHORT_SYNC, I2S_TX_SHORT
+            //_SYNC, I2S_CONF_REG , I2S_RX_MSB_SHIFT and I2S_TX_MSB_SHIFT should all be
+            //_SYNC, reset to 0
+
+            // Other info from https://github.com/espressif/esp-idf/blob/master/components/esp_driver_dac/esp32/dac_dma.c#L109
             i2s.conf().modify(|_, w| {
                 w.tx_slave_mod()
                     .clear_bit()
                     .rx_slave_mod()
                     .clear_bit()
                     .tx_msb_shift()
-                    .set_bit() // ?
+                    .clear_bit() // according to dac_dma_periph_init
                     .rx_msb_shift()
-                    .set_bit() // ?
+                    .clear_bit() // according to dac_dma_periph_init
                     .tx_short_sync()
                     .variant(false) //??
                     .rx_short_sync()
@@ -1225,9 +1239,9 @@ mod private {
                     .rx_msb_right()
                     .clear_bit()
                     .tx_right_first()
-                    .clear_bit()
+                    .set_bit() // according to dac_dma_periph_init
                     .rx_right_first()
-                    .clear_bit()
+                    .set_bit() // according to dac_dma_periph_init
                     .tx_mono()
                     .clear_bit()
                     .rx_mono()
@@ -1258,8 +1272,10 @@ mod private {
             i2s.pd_conf()
                 .modify(|_, w| w.fifo_force_pu().set_bit().fifo_force_pd().clear_bit());
 
+            // Like esp-idf in i2s_ll_enable_builtin_adc_dac()
+            // LCD_EN must be true, camera_en must be false
             i2s.conf2()
-                .modify(|_, w| w.camera_en().clear_bit().lcd_en().clear_bit());
+                .modify(|_, w| w.camera_en().clear_bit().lcd_en().set_bit());
         }
 
         fn set_master() {

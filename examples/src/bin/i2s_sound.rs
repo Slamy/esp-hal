@@ -33,6 +33,7 @@
 
 use esp_backtrace as _;
 use esp_hal::{
+    analog::dac::{DAC1, DAC2},
     clock::ClockControl,
     dma::{Dma, DmaPriority},
     dma_buffers,
@@ -41,14 +42,7 @@ use esp_hal::{
     peripherals::Peripherals,
     prelude::*,
 };
-
-const SINE: [i16; 64] = [
-    0, 3211, 6392, 9511, 12539, 15446, 18204, 20787, 23169, 25329, 27244, 28897, 30272, 31356,
-    32137, 32609, 32767, 32609, 32137, 31356, 30272, 28897, 27244, 25329, 23169, 20787, 18204,
-    15446, 12539, 9511, 6392, 3211, 0, -3211, -6392, -9511, -12539, -15446, -18204, -20787, -23169,
-    -25329, -27244, -28897, -30272, -31356, -32137, -32609, -32767, -32609, -32137, -31356, -30272,
-    -28897, -27244, -25329, -23169, -20787, -18204, -15446, -12539, -9511, -6392, -3211,
-];
+use esp_println::println;
 
 #[entry]
 fn main() -> ! {
@@ -57,6 +51,19 @@ fn main() -> ! {
     let clocks = ClockControl::boot_defaults(system.clock_control).freeze();
 
     let io = IO::new(peripherals.GPIO, peripherals.IO_MUX);
+
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "esp32")] {
+            let dac1_pin = io.pins.gpio25.into_analog();
+            let dac2_pin = io.pins.gpio26.into_analog();
+        } else if #[cfg(feature = "esp32s2")] {
+            let dac1_pin = io.pins.gpio17.into_analog();
+            let dac2_pin = io.pins.gpio18.into_analog();
+        }
+    }
+    // Create DAC instances
+    let mut dac1 = DAC1::new(peripherals.DAC1, dac1_pin);
+    let mut dac2 = DAC2::new(peripherals.DAC2, dac2_pin);
 
     let dma = Dma::new(peripherals.DMA);
     #[cfg(any(feature = "esp32", feature = "esp32s2"))]
@@ -80,13 +87,18 @@ fn main() -> ! {
         &clocks,
     );
 
-    let mut i2s_tx = i2s
-        .i2s_tx
-        .with_bclk(io.pins.gpio2)
-        .with_ws(io.pins.gpio4)
-        .with_dout(io.pins.gpio5)
-        .build();
+    let mut i2s_tx = i2s.i2s_tx.build();
 
+    // construct a stereo sine signal with one channel having a sine wave
+    // and the other one a cosine wave.
+    // Connect to an oscilloscope in XY mode and you see a circle!
+    let mut SINE: [u16; 64] = [0; 64];
+    for i in 0..SINE.len() / 2 {
+        let phi = (i as f32 / 32.0) * core::f32::consts::PI * 2.0;
+        SINE[i * 2 + 0] = (0x8000 as f32 + libm::sinf(phi) * 0x7f00 as f32) as u16;
+        SINE[i * 2 + 1] = (0x8000 as f32 + libm::cosf(phi) * 0x7f00 as f32) as u16;
+    }
+    println!("{:?}", SINE);
     let data =
         unsafe { core::slice::from_raw_parts(&SINE as *const _ as *const u8, SINE.len() * 2) };
 
