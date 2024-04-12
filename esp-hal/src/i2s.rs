@@ -285,8 +285,6 @@ where
         }
     }
 
-
-
     /// Check if the DMA transfer is complete
     fn is_done(&self) -> bool {
         self.i2s_tx.tx_channel.is_done()
@@ -663,13 +661,11 @@ where
         let (ptr, len) = unsafe { words.read_buffer() };
 
         // Reset TX unit and TX FIFO
-        //T::reset_tx();
+        // T::reset_tx();
 
         // Enable corresponding interrupts if needed
-        //self.tx_channel.listen_eof();
-        self.tx_channel.listen_ch_out_done();
-
-    
+        self.tx_channel.listen_eof();
+        // self.tx_channel.listen_ch_out_done();
 
         // configure DMA outlink
         self.tx_channel
@@ -681,15 +677,14 @@ where
         // start: set I2S_TX_START
         T::tx_start();
 
-        //while !self.tx_channel.is_done(){}
+        // while !self.tx_channel.is_done(){}
 
         Ok(I2sWriteDmaTransfer { i2s_tx: self })
     }
 
     fn wait_tx_dma_done(&self) -> Result<(), Error> {
         // wait until I2S_TX_IDLE is 1
-        //T::wait_for_tx_done();
-        
+        // T::wait_for_tx_done();
 
         Ok(())
     }
@@ -1186,12 +1181,8 @@ mod private {
             #[cfg(esp32)]
             i2s.clkm_conf().modify(|_, w| w.clka_ena().clear_bit());
 
-            i2s.clkm_conf().modify(|_, w| {
-                w.clk_en()
-                    .set_bit()
-                    .clkm_div_num()
-                    .variant(8 as u8)
-            });
+            i2s.clkm_conf()
+                .modify(|_, w| w.clk_en().set_bit().clkm_div_num().variant(32 as u8));
 
             i2s.clkm_conf().modify(|_, w| {
                 w.clkm_div_a()
@@ -1288,8 +1279,12 @@ mod private {
 
             // Like esp-idf in i2s_ll_enable_builtin_adc_dac()
             // LCD_EN must be true, camera_en must be false
-            i2s.conf2()
-                .modify(|_, w| w.camera_en().clear_bit().lcd_en().variant(*standard == Standard::DAC));
+            i2s.conf2().modify(|_, w| {
+                w.camera_en()
+                    .clear_bit()
+                    .lcd_en()
+                    .variant(*standard == Standard::DAC)
+            });
         }
 
         fn set_master() {
