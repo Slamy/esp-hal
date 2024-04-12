@@ -1181,8 +1181,12 @@ mod private {
             #[cfg(esp32)]
             i2s.clkm_conf().modify(|_, w| w.clka_ena().clear_bit());
 
-            i2s.clkm_conf()
-                .modify(|_, w| w.clk_en().set_bit().clkm_div_num().variant(32 as u8));
+            i2s.clkm_conf().modify(|_, w| {
+                w.clk_en()
+                    .set_bit()
+                    .clkm_div_num()
+                    .variant(clock_settings.mclk_divider as u8)
+            });
 
             i2s.clkm_conf().modify(|_, w| {
                 w.clkm_div_a()
