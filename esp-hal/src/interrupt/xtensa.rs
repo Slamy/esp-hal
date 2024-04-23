@@ -431,6 +431,12 @@ mod vectored {
         handle_interrupts(level, save_frame)
     }
 
+    #[no_mangle]
+    #[link_section = ".rwtext"]
+    unsafe fn __level_7_interrupt(level: u32, save_frame: &mut Context) {
+        handle_interrupts(level, save_frame)
+    }
+
     #[ram]
     unsafe fn handle_interrupts(level: u32, save_frame: &mut Context) {
         let cpu_interrupt_mask =
@@ -575,7 +581,6 @@ mod raw {
         fn level4_interrupt(save_frame: &mut Context);
         fn level5_interrupt(save_frame: &mut Context);
         fn level6_interrupt(save_frame: &mut Context);
-        fn level7_interrupt(save_frame: &mut Context);
     }
 
     #[no_mangle]
@@ -615,11 +620,5 @@ mod raw {
     #[link_section = ".rwtext"]
     unsafe fn __level_6_interrupt(_level: u32, save_frame: &mut Context) {
         level6_interrupt(save_frame)
-    }
-
-    #[no_mangle]
-    #[link_section = ".rwtext"]
-    unsafe fn __level_7_interrupt(_level: u32, save_frame: &mut Context) {
-        level7_interrupt(save_frame)
     }
 }
