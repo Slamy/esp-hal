@@ -87,6 +87,8 @@ pub struct DmaDescriptor {
     next: *mut DmaDescriptor,
 }
 
+unsafe impl Send for DmaDescriptor {}
+
 impl DmaDescriptor {
     /// An empty DMA descriptor used to initialize the descriptor list.
     pub const EMPTY: Self = Self {
@@ -1006,6 +1008,13 @@ where
     pub buffer_start: *const u8,
     pub buffer_len: usize,
     pub _phantom: PhantomData<R>,
+}
+
+unsafe impl<'a, T, R> Send for ChannelTx<'a, T, R>
+where
+    T: TxChannel<R>,
+    R: RegisterAccess,
+{
 }
 
 impl<'a, T, R> ChannelTx<'a, T, R>

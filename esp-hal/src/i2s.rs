@@ -234,6 +234,10 @@ where
         self.i2s_tx.tx_channel.available()
     }
 
+    pub fn clear_int(&mut self) {
+        self.i2s_tx.tx_channel.clear_ch_out_done();
+    }
+
     /// Push bytes into the DMA buffer.
     /// Only useful for circular DMA transfers
     pub fn push(&mut self, data: &[u8]) -> Result<usize, Error> {
@@ -657,9 +661,11 @@ where
         let (ptr, len) = unsafe { words.read_buffer() };
 
         // Reset TX unit and TX FIFO
-        T::reset_tx();
+        // T::reset_tx();
 
         // Enable corresponding interrupts if needed
+        // self.tx_channel.listen_eof();
+        // self.tx_channel.listen_ch_out_done();
 
         // configure DMA outlink
         self.tx_channel
@@ -671,12 +677,14 @@ where
         // start: set I2S_TX_START
         T::tx_start();
 
+        // while !self.tx_channel.is_done(){}
+
         Ok(I2sWriteDmaTransfer { i2s_tx: self })
     }
 
     fn wait_tx_dma_done(&self) -> Result<(), Error> {
         // wait until I2S_TX_IDLE is 1
-        T::wait_for_tx_done();
+        // T::wait_for_tx_done();
 
         Ok(())
     }
@@ -1275,8 +1283,12 @@ mod private {
 
             // Like esp-idf in i2s_ll_enable_builtin_adc_dac()
             // LCD_EN must be true, camera_en must be false
-            i2s.conf2()
-                .modify(|_, w| w.camera_en().clear_bit().lcd_en().variant(*standard == Standard::DAC));
+            i2s.conf2().modify(|_, w| {
+                w.camera_en()
+                    .clear_bit()
+                    .lcd_en()
+                    .variant(*standard == Standard::DAC)
+            });
         }
 
         fn set_master() {
