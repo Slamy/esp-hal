@@ -57,6 +57,38 @@ pub struct DAC1<'d> {
     _inner: PeripheralRef<'d, peripherals::DAC1>,
 }
 
+pub fn set_dma_mode(state: bool) {
+    if state {
+        // Experimental according to https://github.com/espressif/esp-idf/blob/master/components/hal/esp32/include/hal/dac_ll.h
+        // dac_dig_force must be true when fed from I2S. Same goes for dac_clk_inv ?
+        unsafe { &*peripherals::SENS::PTR }
+            .sar_dac_ctrl1()
+            .modify(|_, w| w.dac_dig_force().set_bit().dac_clk_inv().set_bit());
+    } else {
+        unsafe { &*peripherals::SENS::PTR }
+            .sar_dac_ctrl1()
+            .modify(|_, w| w.dac_dig_force().clear_bit().dac_clk_inv().clear_bit());
+    }
+}
+
+pub fn unsafe_write(dac1: u8, dac2: u8) {
+    unsafe { &*crate::peripherals::SENS::PTR }
+        .sar_dac_ctrl2()
+        .modify(|_, w| w.dac_cw_en1().clear_bit());
+
+    unsafe { &*crate::peripherals::RTC_IO::PTR }
+        .pad_dac1()
+        .modify(|_, w| unsafe { w.pdac1_dac().bits(dac1) });
+
+    unsafe { &*crate::peripherals::SENS::PTR }
+        .sar_dac_ctrl2()
+        .modify(|_, w| w.dac_cw_en2().clear_bit());
+
+    unsafe { &*crate::peripherals::RTC_IO::PTR }
+        .pad_dac2()
+        .modify(|_, w| unsafe { w.pdac2_dac().bits(dac2) });
+}
+
 impl<'d> DAC1<'d> {
     /// Constructs a new DAC instance.
     pub fn new(dac: impl Peripheral<P = peripherals::DAC1> + 'd, _pin: Dac1Gpio) -> Self {
@@ -72,20 +104,6 @@ impl<'d> DAC1<'d> {
             .modify(|_, w| w.pdac1_dac_xpd_force().set_bit().pdac1_xpd_dac().set_bit());
 
         Self { _inner: dac }
-    }
-
-    pub fn set_dma_mode(&mut self, state: bool) {
-        if state {
-            // Experimental according to https://github.com/espressif/esp-idf/blob/master/components/hal/esp32/include/hal/dac_ll.h
-            // dac_dig_force must be true when fed from I2S. Same goes for dac_clk_inv ?
-            unsafe { &*peripherals::SENS::PTR }
-                .sar_dac_ctrl1()
-                .modify(|_, w| w.dac_dig_force().set_bit().dac_clk_inv().set_bit());
-        } else {
-            unsafe { &*peripherals::SENS::PTR }
-                .sar_dac_ctrl1()
-                .modify(|_, w| w.dac_dig_force().clear_bit().dac_clk_inv().clear_bit());
-        }
     }
 
     /// Writes the given value.
@@ -123,20 +141,6 @@ impl<'d> DAC2<'d> {
             .modify(|_, w| w.pdac2_dac_xpd_force().set_bit().pdac2_xpd_dac().set_bit());
 
         Self { _inner: dac }
-    }
-
-    pub fn set_dma_mode(&mut self, state: bool) {
-        if state {
-            // Experimental according to https://github.com/espressif/esp-idf/blob/master/components/hal/esp32/include/hal/dac_ll.h
-            // dac_dig_force must be true when fed from I2S. Same goes for dac_clk_inv ?
-            unsafe { &*peripherals::SENS::PTR }
-                .sar_dac_ctrl1()
-                .modify(|_, w| w.dac_dig_force().set_bit().dac_clk_inv().set_bit());
-        } else {
-            unsafe { &*peripherals::SENS::PTR }
-                .sar_dac_ctrl1()
-                .modify(|_, w| w.dac_dig_force().clear_bit().dac_clk_inv().clear_bit());
-        }
     }
 
     /// Writes the given value.

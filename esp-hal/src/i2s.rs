@@ -664,7 +664,7 @@ where
         // T::reset_tx();
 
         // Enable corresponding interrupts if needed
-        self.tx_channel.listen_eof();
+        // self.tx_channel.listen_eof();
         // self.tx_channel.listen_ch_out_done();
 
         // configure DMA outlink
