@@ -71,24 +71,6 @@ pub fn set_dma_mode(state: bool) {
     }
 }
 
-pub fn unsafe_write(dac1: u8, dac2: u8) {
-    unsafe { &*crate::peripherals::SENS::PTR }
-        .sar_dac_ctrl2()
-        .modify(|_, w| w.dac_cw_en1().clear_bit());
-
-    unsafe { &*crate::peripherals::RTC_IO::PTR }
-        .pad_dac1()
-        .modify(|_, w| unsafe { w.pdac1_dac().bits(dac1) });
-
-    unsafe { &*crate::peripherals::SENS::PTR }
-        .sar_dac_ctrl2()
-        .modify(|_, w| w.dac_cw_en2().clear_bit());
-
-    unsafe { &*crate::peripherals::RTC_IO::PTR }
-        .pad_dac2()
-        .modify(|_, w| unsafe { w.pdac2_dac().bits(dac2) });
-}
-
 impl<'d> DAC1<'d> {
     /// Constructs a new DAC instance.
     pub fn new(dac: impl Peripheral<P = peripherals::DAC1> + 'd, _pin: Dac1Gpio) -> Self {
